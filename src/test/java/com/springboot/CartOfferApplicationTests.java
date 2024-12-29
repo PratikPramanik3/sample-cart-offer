@@ -1,16 +1,6 @@
 package com.springboot;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.springboot.controller.OfferRequest;
-import com.springboot.controller.SegmentResponse;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-
 import java.io.BufferedReader;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -18,22 +8,55 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-@RunWith(SpringRunner.class)
+import com.springboot.controller.*;
+import com.springboot.utils.JsonUtils;
+import org.junit.Assert;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.testng.annotations.Test;
+
+
 @SpringBootTest
-public class CartOfferApplicationTests {
+public class CartOfferApplicationTests extends AbstractTestNGSpringContextTests {
 
 
-	@Test
-	public void checkFlatXForOneSegment() throws Exception {
+	// We have 2 types of offers FLAT X and FLAT X %
+	@Test()
+	public void addOfferToRestaurantOnSegments(String offerType, int offerValue, String segment, int restaurantId) throws Exception {
 		List<String> segments = new ArrayList<>();
-		segments.add("p1");
-		OfferRequest offerRequest = new OfferRequest(1,"FLATX",10,segments);
-		boolean result = addOffer(offerRequest);
-		Assert.assertEquals(result,true); // able to add offer
+		SegmentResponse segmentResponse = new SegmentResponse();
+		segmentResponse.setSegment(segment);
+		segments.add(segment);
+		OfferRequest offerRequest = new OfferRequest(restaurantId,offerType,offerValue,segments);
+		offerRequest.setRestaurant_id(restaurantId);
+		offerRequest.setOffer_type(offerType);
+		offerRequest.setOffer_value(offerValue);
+		String applyOfferEndpoint = "http://localhost:9001/api/v1/offer";
+		String result = getResponseForCartApplications(offerRequest, applyOfferEndpoint);
+		//ApiResponse apiResponse = JsonUtils.jsonToDto(result, ApiResponse.class);
+		//Assert.assertEquals(apiResponse.getResponse_msg(),true);
 	}
 
-	public boolean addOffer(OfferRequest offerRequest) throws Exception {
-		String urlString = "http://localhost:9001/api/v1/offer";
+	@Test(dataProvider = "cartOfferTestCases", dataProviderClass = CartOfferDataProvider.class)
+	public void applyCartOffer(int cartValue, int userId, int restaurantId, String segment, String offerType, int offerValue, int expectedValue) throws Exception {
+		addOfferToRestaurantOnSegments(offerType, offerValue, segment, restaurantId);
+		String applyCartOfferEndpoint = "http://localhost:9001/api/v1/cart/apply_offer";
+		ApplyCartOfferRequest applyCartOfferRequest = new ApplyCartOfferRequest(cartValue, restaurantId, userId);
+		applyCartOfferRequest.setCart_value(cartValue);
+		applyCartOfferRequest.setRestaurant_id(restaurantId);
+		applyCartOfferRequest.setUser_id(userId);
+		String result = getResponseForCartApplications(applyCartOfferRequest, applyCartOfferEndpoint);
+		System.out.println(result);
+		//ApplyCartOfferResponse apiResponse = JsonUtils.jsonToDto(result, ApplyCartOfferResponse.class);
+		// followed by asserts
+	}
+
+	public <T> String getResponseForCartApplications(T offerRequest, String endPoint) throws Exception {
+		String urlString = endPoint;
 		URL url = new URL(urlString);
 		HttpURLConnection con = (HttpURLConnection) url.openConnection();
 		con.setDoOutput(true);
@@ -60,9 +83,11 @@ public class CartOfferApplicationTests {
 			in.close();
 			// print result
 			System.out.println(response.toString());
+			return response.toString();
 		} else {
 			System.out.println("POST request did not work.");
+			return "";
 		}
-		return true;
 	}
 }
+

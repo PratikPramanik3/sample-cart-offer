@@ -2,9 +2,13 @@ package com.springboot.controller;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Data
 @AllArgsConstructor
-public class ApplyOfferResponse {
+@Getter
+@Setter
+public class ApplyCartOfferResponse {
     private int cart_value;
 }

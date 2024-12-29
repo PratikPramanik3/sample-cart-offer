@@ -1,18 +1,14 @@
 package com.springboot.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.springboot.service.Dog;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
-
-import com.springboot.service.Animal;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @RestController
@@ -23,16 +19,22 @@ public class AutowiredController {
 
 	@PostMapping(path = "/api/v1/offer")
 	public ApiResponse postOperation(@RequestBody OfferRequest offerRequest) {
-		System.out.println(offerRequest);
+		//System.out.println(offerRequest);
 		allOffers.add(offerRequest);
 		return new ApiResponse("success");
 	}
 
 	@PostMapping(path = "/api/v1/cart/apply_offer")
-	public ApplyOfferResponse applyOffer(@RequestBody ApplyOfferRequest applyOfferRequest) throws Exception {
+	public ApplyCartOfferResponse applyOffer(@RequestBody ApplyCartOfferRequest applyOfferRequest) throws Exception {
 		System.out.println(applyOfferRequest);
+		System.out.println("               ");
 		int cartVal = applyOfferRequest.getCart_value();
 		SegmentResponse segmentResponse = getSegmentResponse(applyOfferRequest.getUser_id());
+		System.out.println(segmentResponse);
+		System.out.println("               ");
+		for (OfferRequest offerRequest : allOffers) {
+			System.out.println(offerRequest.toString());
+		}
 		Optional<OfferRequest> matchRequest = allOffers.stream().filter(x->x.getRestaurant_id()==applyOfferRequest.getRestaurant_id())
 				.filter(x->x.getCustomer_segment().contains(segmentResponse.getSegment()))
 				.findFirst();
@@ -43,13 +45,15 @@ public class AutowiredController {
 			OfferRequest gotOffer = matchRequest.get();
 
 			if(gotOffer.getOffer_type().equals("FLATX")) {
+				System.out.println(gotOffer.getOffer_type());
 				cartVal = cartVal - gotOffer.getOffer_value();
 			} else {
+				System.out.println(gotOffer.getOffer_type());
 				cartVal = (int) (cartVal - cartVal * gotOffer.getOffer_value()*(0.01));
 			}
 
 		}
-		return new ApplyOfferResponse(cartVal);
+		return new ApplyCartOfferResponse(cartVal);
 	}
 
 	private SegmentResponse getSegmentResponse(int userid)
