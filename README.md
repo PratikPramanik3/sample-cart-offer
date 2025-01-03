@@ -14,3 +14,7 @@ The server will start at port 9001
 
 # How to run the tests
 ./mvnw test  
+
+# Please find the Test case and possible edge cases in the Test file
+
+# Project is ongoing
